@@ -26,11 +26,6 @@ export function singlePgnToMoves( pgn_content, repForWhite ) {
 }
 
 function singlePgnToCMPgnMoves( pgn_content ) {
-
-	// Remove comments
-	// This circumvents cm-pgn bug shaack/cm-pgn#17
-	pgn_content = pgn_content.replaceAll(/\{[^}]*\}/gs, '');
-
 	// Remove trailing newlines/spaces
 	pgn_content = pgn_content.replace(/\s*$/gs, '');
 
@@ -56,6 +51,10 @@ function chessHistoryToMoves( history, repForWhite ) {
 			fromFen: normalize_fen( move.previous ? move.previous.fen : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1' ),
 			toFen:   normalize_fen(move.fen),
 			moveSan: move.san,
+			commentBefore: move.commentBefore,
+			commentMove: move.commentMove,
+			commentAfter: move.commentAfter,
+			nag: move.nag,
 		} );
 		// traverse variations
 		for ( const variation of move.variations ) {
@@ -75,7 +74,6 @@ function chessHistoryToMoves( history, repForWhite ) {
 // Ideally, this would be solved in cm-pgn.
 function split_pgndb_into_pgns( pgn_db ) {
 	pgn_db = pgn_db.replaceAll( /\r/g, "" );
-	pgn_db = pgn_db.replaceAll(/\{[^}]*\}/gs, ''); // remove comments -- removed anyway in singlePgnToCmPgnMoves
 	pgn_db = pgn_db + '\n\n'; // makes the following regex hack work for pgn databases that don't end in newlines
 	const regex = /(\[.*?\n\n *\S.*?\n\n)/gs;
 	const found = pgn_db.match(regex);

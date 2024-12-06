@@ -35,4 +35,24 @@ export function orphanMoveSoftDeletionsQueries( moves, prisma ) {
 	return queries;
 }
 
+const nagMapping = {
+	'$1': { symbol: '!', meaning: 'Good move' },
+	'$2': { symbol: '?', meaning: 'Bad move' },
+	'$3': { symbol: '!!', meaning: 'Excellent move' },
+	'$4': { symbol: '??', meaning: 'Blunder' },
+	'$5': { symbol: '!?', meaning: 'Interesting move' },
+	'$6': { symbol: '?!', meaning: 'Dubious move' },
+	'$7': { symbol: '□', meaning: 'Forced move (all other moves lose)' },
+	'$10': { symbol: '=', meaning: 'Equal position' },
+	'$13': { symbol: '∞', meaning: 'Unclear position' },
+	'$14': { symbol: '⩲', meaning: 'White has a slight advantage' },
+	'$15': { symbol: '⩱', meaning: 'Black has a slight advantage' },
+	'$16': { symbol: '±', meaning: 'White has a moderate advantage' },
+	'$17': { symbol: '∓', meaning: 'Black has a moderate advantage' },
+	'$18': { symbol: '+−', meaning: 'White has a decisive advantage' },
+	'$19': { symbol: '−+', meaning: 'Black has a decisive advantage' },
+};
 
+export function getNagInfo(nag) {
+	return nagMapping[nag] || { symbol: '', meaning: 'Unknown annotation' };
+}

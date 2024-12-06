@@ -1,55 +1,77 @@
 import { pgndbToMoves, pgndbNumChapters } from '$lib/pgnParsing.js';
 import { orphanMoveSoftDeletionsQueries } from '$lib/movesUtil.js';
 
-export async function importPgn( pgn_content, pgn_filename, prisma, user_id, repForWhite ) {
+export async function importPgn(pgn_content, pgn_filename, prisma, user_id, repForWhite) {
+    // Parse (multi-game) PGN into moves-list
+    const moves = pgndbToMoves(pgn_content, repForWhite);
+    const num_chapters_parsed = pgndbNumChapters(pgn_content);
 
-	// parse (multi-game) PGN into moves-list
-	const moves = pgndbToMoves( pgn_content, repForWhite );
-	const num_chapters_parsed = pgndbNumChapters( pgn_content );
+    // Create PGN record
+    const pgn = await prisma.pgn.create({
+        data: {
+            userId: user_id,
+            repForWhite,
+            filename: pgn_filename,
+            content: pgn_content,
+        },
+    });
 
-	// create pgn
-	const pgn = await prisma.pgn.create({ data: {
-		userId: user_id,
-		repForWhite: repForWhite,
-		filename: pgn_filename,
-		content: pgn_content
-	} });
+    // Prepare queries for inserting/upserting moves
+    let queries = [];
+    for (const move of moves) {
+        move.userId = user_id;
+        move.pgns = { connect: [{ id: pgn.id }] };
 
-	// insert moves into db
-	let queries = [];
-	for ( const move of moves ) {
-		move.userId = user_id;
-		move.pgns = { connect: [{ id: pgn.id }] };
-		queries.push( prisma.move.upsert( {
-			where: {
-				userId_repForWhite_fromFen_toFen: {
-					userId: user_id,
-					repForWhite: move.repForWhite,
-					fromFen: move.fromFen,
-					toFen: move.toFen
-				}
-			},
-			create: move,
-			update: {
-				pgns: move.pgns,
-				deleted: false
-			}
-		}) );
-	}
+        queries.push(
+            prisma.move.upsert({
+                where: {
+                    userId_repForWhite_fromFen_toFen: {
+                        userId: user_id,
+                        repForWhite: move.repForWhite,
+                        fromFen: move.fromFen,
+                        toFen: move.toFen,
+                    },
+                },
+                create: {
+                    userId: user_id,
+                    repForWhite: move.repForWhite,
+                    fromFen: move.fromFen,
+                    toFen: move.toFen,
+                    moveSan: move.moveSan,
+                    ownMove: move.ownMove,
+                    commentBefore: move.commentBefore || null,
+                    commentMove: move.commentMove || null,
+                    commentAfter: move.commentAfter || null,
+                    nag: move.nag || null,
+                    deleted: false,
+                    pgns: { connect: [{ id: pgn.id }] },
+                },
+                update: {
+                    pgns: { connect: [{ id: pgn.id }] },
+                    deleted: false,
+                    commentBefore: move.commentBefore || null,
+                    commentMove: move.commentMove || null,
+                    commentAfter: move.commentAfter || null,
+                    nag: move.nag || null,
+                },
+            })
+        );
+    }
 
-	try {
-		if ( queries.length > 0 ) {
-			await prisma.$transaction(queries);
-		}
-	} catch(e) {
-		console.warn( 'Failed adding moves to database: ' + e.message );
-		throw new Error( 'Failed adding moves to databse: ' + e.message );
-	}
+    // Execute queries in a transaction
+    try {
+        if (queries.length > 0) {
+            await prisma.$transaction(queries);
+        }
+    } catch (e) {
+        console.warn('Failed adding moves to database: ' + e.message);
+        throw new Error('Failed adding moves to database: ' + e.message);
+    }
 
-	return {
-		num_moves_parsed: moves.length,
-		num_chapters_parsed,
-	}
+    return {
+        num_moves_parsed: moves.length,
+        num_chapters_parsed,
+    };
 }
 
 // Deletes a PGN.

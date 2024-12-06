@@ -86,6 +86,11 @@ model Move {
 	deleted         Boolean @default(false)
 	history         StudyHistory[]
 
+    commentBefore   String?
+    commentMove     String?
+    commentAfter    String?
+    nag             String?
+
 	@@unique([ userId, repForWhite, fromFen, toFen ])
 }
 

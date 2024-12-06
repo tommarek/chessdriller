@@ -196,6 +196,10 @@
 			if (!isStudied) {
 				// temporarily make the move to find the correct squares for the arrow
 				const correctMove = line[current_move_i].moveSan;
+				console.log('commentBefore:', line[current_move_i].commentBefore)
+				console.log('commentAfter:', line[current_move_i].commentAfter)
+				console.log('commentMove:', line[current_move_i].commentMove)
+				console.log('nag:', line[current_move_i].nag)
 				let move = chess.move(correctMove);
 				createArrow(move.from, move.to, 'blue'); // Show the arrow
 				chess.undo()
