@@ -234,6 +234,34 @@
 			return [ container.clientWidth - x, container.clientWidth - y ];
 		}
 	}
+
+	// Function to color a square
+	export function colorSquare(square, color) {
+		if (!chessground) return;
+		const currentShapes = chessground.getAutoShapes() || [];
+		const updatedShapes = [
+			...currentShapes,
+			{ brush: color, orig: square }
+		];
+		chessground.setAutoShapes(updatedShapes);
+	}
+
+	// Function to create an arrow
+	export function createArrow(from, to, color) {
+		if (!chessground) return;
+		const currentShapes = chessground.getAutoShapes() || [];
+		const updatedShapes = [
+			...currentShapes,
+			{ brush: color, orig: from, dest: to }
+		];
+		chessground.setAutoShapes(updatedShapes);
+	}
+
+	// Function to reset all arrows and square highlights
+	export function resetShapes() {
+		if (!chessground) return;
+		chessground.setAutoShapes([]);
+	}
 </script>
 
 <div style="width:100%;max-width:512px;aspect-ratio:1;" bind:this={container}>
