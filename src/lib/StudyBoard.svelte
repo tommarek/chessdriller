@@ -25,6 +25,9 @@
 	$: orientation = line && line[0].ownMove ? 'white' : 'black';
 	let container;
 	
+	// array of auto shapes currently displayed
+	let shapes = []
+	
 	export function getOrientation() {
 		return orientation;
 	}
@@ -47,6 +50,22 @@
 	onMount(async () => {
 		is_mounted = true;
 	});
+
+	async function checkIfStudied(moveId) {
+		try {
+			const res = await fetch(`/api/study/check/${moveId}`);
+			if (res.ok) {
+				const data = await res.json();
+				return data.studied;
+			} else {
+				console.warn("Failed to check if move was studied:", res.statusText);
+				return false;
+			}
+		} catch (error) {
+			console.error("Error checking if move was studied:", error);
+			return false;
+		}
+	}
 
 	// Reset the board to the current line and start_move_ix
 	function resetBoard() {
@@ -155,6 +174,7 @@
 				setTimeout( ()=>{ chessground.set({ fen: chess.fen() }) }, 200 );
 			}
 			current_move_i++;
+			resetShapes()
 			if ( current_move_i == line.length ) {
 				console.log( "Line finished because it reached the end" );
 				lineFinished();
@@ -166,8 +186,23 @@
 		}
 	}
 
-	function allowBoardInput() {
+	async function allowBoardInput() {
 		const turnColor = chess.turn() === 'w' ? 'white' : 'black';
+
+		// Check if the move has been studied before
+		const currentMoveId = line[current_move_i]?.id;
+		if (currentMoveId) {
+			const isStudied = await checkIfStudied(currentMoveId);
+			if (!isStudied) {
+				// temporarily make the move to find the correct squares for the arrow
+				const correctMove = line[current_move_i].moveSan;
+				let move = chess.move(correctMove);
+				createArrow(move.from, move.to, 'blue'); // Show the arrow
+				chess.undo()
+			}
+		}
+
+		// Enable user input for the move
 		chessground.set({
 			turnColor: turnColor,
 			movable: {
@@ -180,7 +215,7 @@
 			}
 		});
 	}
-	
+
 	function lineFinished() {
 		chessground.set({
 			movable: {}
@@ -194,11 +229,7 @@
 	export function showAnswer() {
 		const chess_clone = new Chess( chess.fen() );
 		const move = chess_clone.move( line[current_move_i].moveSan );
-		chessground.setAutoShapes( [ {
-			orig: move.from,
-			dest: move.to,
-			brush: 'red' // TODO: custom color, shape that fits theme better
-		} ] );
+		createArrow(move.from, move.to, 'red')
 	}
 
 	// find allowed piece destinations via chess.js logic.
@@ -238,29 +269,28 @@
 	// Function to color a square
 	export function colorSquare(square, color) {
 		if (!chessground) return;
-		const currentShapes = chessground.getAutoShapes() || [];
-		const updatedShapes = [
-			...currentShapes,
+		shapes = [
+			...shapes,
 			{ brush: color, orig: square }
 		];
-		chessground.setAutoShapes(updatedShapes);
+		chessground.setAutoShapes(shapes);
 	}
 
 	// Function to create an arrow
 	export function createArrow(from, to, color) {
 		if (!chessground) return;
-		const currentShapes = chessground.getAutoShapes() || [];
-		const updatedShapes = [
-			...currentShapes,
+		shapes = [
+			...shapes,
 			{ brush: color, orig: from, dest: to }
 		];
-		chessground.setAutoShapes(updatedShapes);
+		chessground.setAutoShapes(shapes);
 	}
 
 	// Function to reset all arrows and square highlights
 	export function resetShapes() {
 		if (!chessground) return;
-		chessground.setAutoShapes([]);
+		shapes = []
+		chessground.setAutoShapes(shapes);
 	}
 </script>
 
