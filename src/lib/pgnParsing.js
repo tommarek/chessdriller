@@ -55,7 +55,7 @@ function chessHistoryToMoves( history, repForWhite ) {
 			ownMove,
 			fromFen: normalize_fen( move.previous ? move.previous.fen : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1' ),
 			toFen:   normalize_fen(move.fen),
-			moveSan: move.san,
+			moveSan: move.san || '--',
 		} );
 		// traverse variations
 		for ( const variation of move.variations ) {
@@ -63,6 +63,7 @@ function chessHistoryToMoves( history, repForWhite ) {
 			moves.push( ...variation_moves );
 		}
 	}
+	console.log( moves );
 	return moves;
 }
 

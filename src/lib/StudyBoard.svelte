@@ -75,11 +75,17 @@
 	}
 
 	function stepOneMoveForward() {
-		const chess_move = chess.move( line[current_move_i].moveSan );
-		chessground.move( chess_move.from, chess_move.to );
-		if ( chess_move.flags.includes('e') ) {
-			// en passant: update board since chessground doesn't remove the captured pawn
-			chessground.set({ fen: chess.fen() });
+		// handle null moves -- move on in the move order while keeping the board state
+		if (line[current_move_i].moveSan === '--') {
+			chess.load(line[current_move_i].toFen);
+			chessground.set({ fen: line[current_move_i].toFen });
+		} else {
+			const chess_move = chess.move( line[current_move_i].moveSan );
+			chessground.move( chess_move.from, chess_move.to );
+			if ( chess_move.flags.includes('e') ) {
+				// en passant: update board since chessground doesn't remove the captured pawn
+				chessground.set({ fen: chess.fen() });
+			}
 		}
 		current_move_i++;
 	}
@@ -118,6 +124,7 @@
 			}
 		} );
 		if ( result === 'wrong' ) {
+			console.log( "Wrong move, undoing" );
 			setTimeout( ()=>{
 				chess.undo();
 				chessground.set({
@@ -127,6 +134,7 @@
 				allowBoardInput();
 			}, Delay_before_wrong_move_undo );
 		} else if ( result === 'branch' ) {
+			console.log( "Branch move, undoing" );
 			setTimeout( ()=>{
 				chess.undo();
 				chessground.set({ animation: { enabled: false } });
@@ -138,6 +146,7 @@
 				allowBoardInput();
 			}, Delay_before_branch_undo );
 		} else if ( result === 'correct' ) {
+			console.log( "Correct move" );
 			const turnColor = chess.turn() === 'w' ? 'white' : 'black';
 			chessground.set({ turnColor: turnColor });
 			chessground.setAutoShapes( [] );
@@ -147,6 +156,7 @@
 			}
 			current_move_i++;
 			if ( current_move_i == line.length ) {
+				console.log( "Line finished because it reached the end" );
 				lineFinished();
 			} else {
 				setTimeout( playOpponentMove, Delay_before_opponent_move );
